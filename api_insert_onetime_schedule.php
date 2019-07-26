@@ -78,6 +78,14 @@ $request_lecture_id = $_POST['lecture_id'];
 $request_lecture_id = str_replace("'","",$request_lecture_id);
 $request_lecture_id = str_replace('"',"",$request_lecture_id);
 
+if ($request_user_id < 100000 && $request_lecture_id != "" ){
+	// lecture_id is not specified for the student.
+	$res = array(
+	'status'=>'5',
+	'data'=>$rslt
+	);
+goto exit_label;
+}
 $request_group_lesson_id = $_POST['group_lesson_id'];
 $request_group_lesson_id = str_replace("'","",$request_group_lesson_id);
 $request_group_lesson_id = str_replace('"',"",$request_group_lesson_id);
