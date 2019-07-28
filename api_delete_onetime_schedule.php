@@ -2,6 +2,8 @@
 ini_set( 'display_errors', 0 );
 require_once("../sakura/schedule/const/const.inc");
 require_once("../sakura/schedule/func.inc");
+require_once("./const.inc");
+require_once("./func.inc");
 
 define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
 
@@ -38,15 +40,8 @@ goto exit_label;
 } 
 
 $now = date('Y-m-d H:i:s');
-$user="hachiojisakura";
-$pass="20160401sakurasaku";
 
 try {
-
-// For temporary
-$dbh=new PDO('mysql:host=mysql720.db.sakura.ne.jp;dbname=hachiojisakura_calendar;charset=utf8',$user,$pass);
-$dbh->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
-// For temporary End.
 
 	$sql = "UPDATE tbl_schedule_onetime SET delflag = 1 ,";
 		$sql .=" deletetime = ?, updateuser = ? WHERE id = ? " ;

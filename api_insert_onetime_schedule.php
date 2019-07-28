@@ -2,6 +2,8 @@
 ini_set( 'display_errors', 0 );
 require_once("../sakura/schedule/const/const.inc");
 require_once("../sakura/schedule/func.inc");
+require_once("./const.inc");
+require_once("./func.inc");
 
 define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
 
@@ -157,13 +159,8 @@ $request_comment = str_replace("'","",$request_comment);
 $request_comment = str_replace('"',"",$request_comment);
 
 $now = date('Y-m-d H:i:s');
-$user="hachiojisakura";
-$pass="20160401sakurasaku";
 
 try {
-
-$dbh=new PDO('mysql:host=mysql720.db.sakura.ne.jp;dbname=hachiojisakura_calendar;charset=utf8',$user,$pass);
-$dbh->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
 
 	$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime WHERE delflag=0 AND user_id=? AND ymd=? AND starttime=? AND endtime=?";
         $stmt = $dbh->prepare($sql);
