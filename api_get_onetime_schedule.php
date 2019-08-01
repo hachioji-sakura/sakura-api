@@ -9,6 +9,7 @@ define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
 
 $http_header = getallheaders();
 $token = "";
+//var_dump($http_header);
 if(isset($http_header["Api-Token"])){
 		$token = $http_header["Api-Token"];
 }
