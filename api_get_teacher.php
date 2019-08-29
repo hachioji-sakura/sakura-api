@@ -1,7 +1,7 @@
 <?php
 ini_set( 'display_errors', 0 );
-require_once("/home/hachiojisakura/www/sakura/schedule/const/const.inc");
-require_once("/home/hachiojisakura/www/sakura/schedule/func.inc");
+require_once("../sakura/schedule/const/const.inc");
+require_once("../sakura/schedule/func.inc");
 
 define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
 

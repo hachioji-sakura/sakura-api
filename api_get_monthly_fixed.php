@@ -2,8 +2,8 @@
 ini_set( 'display_errors', 0 );
 require_once("../sakura/schedule/const/const.inc");
 require_once("../sakura/schedule/func.inc");
-require_once("../const.inc");
-require_once("../func.inc");
+require_once("./const.inc");
+require_once("./func.inc");
 
 define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
 
@@ -18,35 +18,38 @@ if ($token != API_TOKEN) {
 	exit;
 }
 
-$request_id = $_GET['id'];
-$request_id = str_replace("'","",$request_id);
-$request_id = str_replace('"',"",$request_id);
+$request_year = $_GET['year'];
+$request_year = str_replace("'","",$request_year);
+$request_year = str_replace('"',"",$request_year);
+$request_year = (int)$request_year;
+
+$request_month = $_GET['month'];
+$request_month = str_replace("'","",$request_month);
+$request_month = str_replace('"',"",$request_month);
+$request_month = (int)$request_month;
 
 try {
 
 	$sql = "SELECT ".
-		"id,".
-		"shortname,".
-		"explanation".
-		" FROM tbl_work ";
+		"insert_timestamp".
+		" FROM tbl_fixed WHERE year=? AND month=?";
 
-		if ($request_id) {
-			$sql .= " WHERE id='$request_id'";
-		}
-		
-		$stmt = $dbh->query($sql);
+		$stmt = $db->prepare($sql);
+//		$stmt = $dbh->prepare($sql);
+		$stmt->bindValue(1,$request_year, PDO::PARAM_INT);
+		$stmt->bindValue(2,$request_month, PDO::PARAM_INT);
+		$stmt->execute();
 		$rslt = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 	if ($rslt) {
 		$res = array(
-			'status'=>'0',
+			'status'=>'1',
 			'data'=>$rslt
 			);
 	} else {
 		$res = array(
 			// Not found.
-			'status'=>'1',
-			'data'=>$request_target
+			'status'=>'0',
 			);
 	}
 exit_label:

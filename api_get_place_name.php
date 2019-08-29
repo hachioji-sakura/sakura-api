@@ -1,7 +1,9 @@
 <?php
 ini_set( 'display_errors', 0 );
-require_once("/home/hachiojisakura/www/sakura/schedule/const/const.inc");
-require_once("/home/hachiojisakura/www/sakura/schedule/func.inc");
+require_once("../sakura/schedule/const/const.inc");
+require_once("../sakura/schedule/func.inc");
+require_once("./const.inc");
+require_once("./func.inc");
 
 define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
 
@@ -20,15 +22,7 @@ $request_id = $_GET['id'];
 $request_id = str_replace("'","",$request_id);
 $request_id = str_replace('"',"",$request_id);
 
-$user="hachiojisakura";
-$pass="20160401sakurasaku";
-
 try {
-
-// For temporary
-$dbh=new PDO('mysql:host=mysql720.db.sakura.ne.jp;dbname=hachiojisakura_calendar;charset=utf8',$user,$pass);
-$dbh->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
-// For temporary End.
 
 	$sql = "SELECT ".
 		"id,".
