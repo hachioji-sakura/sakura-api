@@ -34,8 +34,8 @@ try {
 		"insert_timestamp".
 		" FROM tbl_fixed WHERE year=? AND month=?";
 
-		$stmt = $db->prepare($sql);
-//		$stmt = $dbh->prepare($sql);
+//		$stmt = $db->prepare($sql);
+		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$request_year, PDO::PARAM_INT);
 		$stmt->bindValue(2,$request_month, PDO::PARAM_INT);
 		$stmt->execute();
