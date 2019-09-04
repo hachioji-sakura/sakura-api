@@ -39,7 +39,12 @@ try {
 		"name as staff_name,".
 		"furigana as staff_furigana,".
 		"mail_address,".
-		"password ".
+		"password, ".
+		"bank_no, ".
+		"bank_branch_no, ".
+		"bank_acount_type, ".
+		"bank_acount_no, ".
+		"bank_acount_name ".
 		"FROM tbl_staff WHERE del_flag!=1";
 	if ($request_staff_id) {
 		$sql .= " AND no='$staff_no'";

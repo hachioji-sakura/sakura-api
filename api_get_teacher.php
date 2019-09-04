@@ -41,7 +41,12 @@ try {
 		"lesson_id,".
 		"lesson_id2,".
 		"mail_address,".
-		"password ".
+		"password, ".
+		"bank_no, ".
+		"bank_branch_no, ".
+		"bank_acount_type, ".
+		"bank_acount_no, ".
+		"bank_acount_name ".
 		"FROM tbl_teacher WHERE del_flag!=1";
 	if ($request_no) {
 		$sql .= " AND no='$request_no'";
