@@ -29,6 +29,7 @@ try {
 		"substr(tbl_member.name, instr(tbl_member.name,' ')+1) as first_name,".
 		"kind as student_kind,".
 		"tbl_grade_name.name as grade,".
+		"del_flag as unsubscribe,".
 		"passwd as password,".
 		"sheet_id,".
 		"cid,".
@@ -62,6 +63,11 @@ try {
 	}
 	$stmt = $db->query($sql);
 	$rslt = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+	foreach ($rslt as &$row) {
+		if ($row['unsubscribe'] == "2") { $row['unsubscribe'] = "1" ;}
+	}
+	unset($row);
 
 	if ($request_student_id) {
 		$str1 = "student_id=$request_student_id Found";

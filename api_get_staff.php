@@ -38,6 +38,7 @@ try {
 		"no + 200000 as staff_id,".
 		"name as staff_name,".
 		"furigana as staff_furigana,".
+		"del_flag as unsubscribe,".
 		"mail_address,".
 		"password, ".
 		"bank_no, ".
@@ -51,6 +52,11 @@ try {
 	}
 	$stmt = $db->query($sql);
 	$rslt = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+	foreach ($rslt as &$row) {
+		if ($row['unsubscribe'] == "2") { $row['unsubscribe'] = "1";}
+	}
+	unset($row);
 
 	if ($request_staff_id) {
 		$str1 = "staff_id=$request_staff_id Found";

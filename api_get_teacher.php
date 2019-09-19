@@ -40,6 +40,7 @@ try {
 		"furigana as teacher_furigana,".
 		"lesson_id,".
 		"lesson_id2,".
+		"del_flag as unsubscribe,".
 		"mail_address,".
 		"password, ".
 		"bank_no, ".
@@ -53,6 +54,11 @@ try {
 	}
 	$stmt = $db->query($sql);
 	$rslt = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+	foreach ($rslt as &$row) {
+		if ($row['unsubscribe'] == "2") { $row['unsubscribe'] = "1"; }
+	}
+	unset($row);
 
 	if ($request_teacher_id) {
 		$str1 = "teacher_id=$request_teacher_id Found";
