@@ -13,7 +13,6 @@ $token = "";
 if(isset($http_header["Api-Token"])){
 		$token = $http_header["Api-Token"];
 }
-// Comment out for temporary.
 if ($token != API_TOKEN) {
 	http_response_code(403);
 	exit;
@@ -29,6 +28,7 @@ define('COURSE_FAMILY',3);
 
 define('PLACE_AROLE',6);
 
+var_dump($_POST['type']);
 $request_id = $_POST['id'];
 $request_id = str_replace("'","",$request_id);
 $request_id = str_replace('"',"",$request_id);
@@ -194,7 +194,7 @@ $now = date('Y-m-d H:i:s');
 try {
 
 				// getting necessary information of the target data.
-	$sql ="SELECT user_id,teacher_id,student_no,ymd,lecture_id,place_id,altsched_id,trial_id,cancel,cancel_reason " ;
+	$sql ="SELECT user_id,teacher_id,student_no,ymd,lecture_id,place_id,altsched_id,trial_id,cancel,cancel_reason,work_id " ;
 	$sql .=" FROM tbl_schedule_onetime WHERE id = ? " ;
 	$stmt = $dbh->prepare($sql);
 	$stmt->bindValue(1,$request_id, PDO::PARAM_INT);
@@ -217,6 +217,7 @@ try {
 	$got_altsched_id = (int)$rslt['altsched_id'];
 	$got_cancel = $rslt['cancel'];
 	$got_cancel_reason = $rslt['cancel_reason'];
+	$got_work_id = $rslt['work_id'];
 
 	if ( $got_lecture_id) {
 				// course id の取得
@@ -333,10 +334,10 @@ try {
                 $limitdateObj = new Datetime($got_ymd);
                 $limitdate_timestamp = $limitdateObj -> getTimestamp();
 										// check how many lessons in a week .
-		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat WHERE delflag=0 AND user_id=? AND lecture_id=? AND (enddate IS NULL OR enddate > ?)";
+		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat WHERE delflag=0 AND user_id=? AND work_id=? AND (enddate IS NULL OR enddate > ?)";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$got_user_id, PDO::PARAM_INT);
-		$stmt->bindValue(2,$got_lecture_id, PDO::PARAM_INT);
+		$stmt->bindValue(2,$got_work_id, PDO::PARAM_INT);
 		$stmt->bindValue(3,$got_ymd, PDO::PARAM_STR);
 		$stmt->execute();
 		$absent_threshold = (int)$stmt->fetchColumn();
@@ -348,13 +349,13 @@ try {
 		}
 							// 対象月のcancel_reason なしの休みの数を調べる
 		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime WHERE delflag = 0 AND ymd BETWEEN ? AND ? AND cancel = ?"  
-			." AND user_id = ? AND lecture_id = ? AND cancel_reason = ' '" ; 
+			." AND user_id = ? AND work_id = ? AND cancel_reason = ' '" ; 
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$absent_month_start, PDO::PARAM_STR);
 		$stmt->bindValue(2,$absent_month_end, PDO::PARAM_STR);
 		$stmt->bindValue(3,$cancel_kind, PDO::PARAM_STR);
 		$stmt->bindValue(4,$got_user_id, PDO::PARAM_INT);
-		$stmt->bindValue(5,$got_lecture_id, PDO::PARAM_INT);
+		$stmt->bindValue(5,$got_work_id, PDO::PARAM_INT);
 		$stmt->execute();
 		$absent_cnt = (int)$stmt->fetchColumn();
 
