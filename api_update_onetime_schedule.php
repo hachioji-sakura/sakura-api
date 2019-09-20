@@ -28,7 +28,7 @@ define('COURSE_FAMILY',3);
 
 define('PLACE_AROLE',6);
 
-var_dump($_POST['type']);
+//var_dump($_POST['type']);
 $request_id = $_POST['id'];
 $request_id = str_replace("'","",$request_id);
 $request_id = str_replace('"',"",$request_id);
