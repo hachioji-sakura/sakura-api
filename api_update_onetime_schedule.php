@@ -22,6 +22,8 @@ define('CANCEL_REASON2','当日');
 define('CANCEL_REASON3','規定回数以上');
 define('CANCEL_REASON4','休講');
 define('CANCEL_REASON5','振替事前連絡あり');
+define('CANCEL_ARROWORE','アローレ都合');
+define('CANCEL_SELFREASON','自己都合');
 
 define('COURSE_GROUP',2);
 define('COURSE_FAMILY',3);
@@ -325,6 +327,16 @@ try {
 			$stmt->execute();
 			goto normal_label;
 		}
+		if ($request_comment == CANCEL_ARROWORE ) {
+			$absent_id = 'a1';
+			$request_cancel_reason = CANCEL_ARROWORE ;
+			goto updatedb_label;
+		}
+		if ($request_comment === CANCEL_SELFREASON) {
+			$absent_id = 'a2';
+			$request_cancel_reason = CANCEL_SELFREASON ;
+			goto updatedb_label;
+		}
 
 		$currentObj = new DateTime();
 								// 21:00 + 3 hours makes 0:00 next day.
@@ -375,10 +387,7 @@ try {
 				$request_cancel_reason = null;
 			}
 		} else if ($absent_cnt < $absent_threshold && $limitdate_timestamp > $current_timestamp ) {
-						// can take alternate lessons.
-			if ($got_place_id == PLACE_AROLE ){
-				$absent_id = 'a2';
-			} else if ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY ){
+			if ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY ){
 				$absent_id = 'a1';
 			} else {
 				$absent_id = 'a2';
@@ -393,6 +402,19 @@ try {
 			$absent_id = 'a2';
 			$request_cancel_reason = CANCEL_REASON2 ;
 		}
+updatedb_label:
+		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
+		$stmt = $dbh->prepare($sql);
+		$stmt->bindValue(1,$absent_id, PDO::PARAM_STR);
+		$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
+		$stmt->bindValue(3,$request_id, PDO::PARAM_INT);
+		$stmt->execute();
+
+	} else if ($request_type==='special_cancel_reason') {
+					 // processing for special cancel reason.
+		$null_cancel_reason = '';
+		$absent_id = 'a2';
+		$request_cancel_reason = '' ;
 		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$absent_id, PDO::PARAM_STR);

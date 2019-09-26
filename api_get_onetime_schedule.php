@@ -20,6 +20,8 @@ if ($token != API_TOKEN) {
 
 define('CANCEL_REASON2','当日');
 define('CANCEL_REASON3','規定回数以上');
+define('UNDEFINEDTEACHER',100000);
+define('UNDEFINEDSTAFF',200000);
 
 $request_id = $_GET['id'];
 $request_id = str_replace("'","",$request_id);
@@ -100,7 +102,8 @@ try {
 		"updatetime,".
 		"updateuser,".
 		"comment".
-		" FROM tbl_schedule_onetime WHERE delflag!=1";
+		" FROM tbl_schedule_onetime WHERE delflag!=1".
+		" AND user_id != 200000 AND user_id != 100000 AND teacher_id != 100000";
 
 		if (!$request_startdate) {
 			$request_startdate=$defaultstartdate;
