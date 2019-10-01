@@ -44,6 +44,7 @@ if (!checkdate($month, $day, $year)){
 // illeagal date format.
 $res = array(
 'status'=>'2',
+'request_ymd'=>$POST['ymd']
 );
 goto exit_label;
 } 
@@ -80,7 +81,7 @@ $request_lecture_id = $_POST['lecture_id'];
 $request_lecture_id = str_replace("'","",$request_lecture_id);
 $request_lecture_id = str_replace('"',"",$request_lecture_id);
 
-if ($request_user_id < 100000 && $request_lecture_id != "" ){
+if ($request_user_id < 100000 && $request_lecture_id == "" ){
 	// lecture_id is not specified for the student.
 	$res = array(
 	'status'=>'5',
