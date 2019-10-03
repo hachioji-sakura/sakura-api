@@ -66,6 +66,7 @@ try {
 
 	foreach ($rslt as &$row) {
 		if ($row['unsubscribe'] == "2") { $row['unsubscribe'] = "1" ;}
+		if ($row['unsubscribe'] == "3") { $row['unsubscribe'] = "0" ;}
 	}
 	unset($row);
 
