@@ -69,7 +69,8 @@ try {
 		"updatetime,".
 		"updateuser,".
 		"comment".
-		" FROM tbl_schedule_repeat WHERE delflag!=1";
+		" FROM tbl_schedule_repeat WHERE delflag!=1".
+                " AND user_id != 200000 AND user_id != 100000 AND teacher_id != 100000";
 
 		if ($request_startdate) {
 			// check date format.
