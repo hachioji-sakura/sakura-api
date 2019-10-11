@@ -163,24 +163,40 @@ $now = date('Y-m-d H:i:s');
 
 try {
 
-	$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime WHERE delflag=0 AND user_id=? AND ymd=? AND starttime=? AND endtime=?";
-        $stmt = $dbh->prepare($sql);
-        $stmt->bindValue(1,$request_user_id, PDO::PARAM_STR);
-        $stmt->bindValue(2,$request_ymd, PDO::PARAM_STR);
-        $stmt->bindValue(3,$request_starttime, PDO::PARAM_STR);
-        $stmt->bindValue(4,$request_endtime, PDO::PARAM_STR);
-        $stmt->execute();
-        $already_exist = (int)$stmt->fetchColumn();
-	if ($already_exist > 0 ) {
+//	$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime WHERE delflag=0 AND user_id=? AND ymd=? AND ".
+//	$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime_test WHERE delflag=0 AND user_id=? AND ymd=? AND ".
+//        " ((starttime < ? AND endtime > ?) OR ( starttime > ? AND endtime < ? ) OR ".
+//        " ( starttime < ? AND endtime > ? ) OR ( starttime < ? AND endtime > ? ))";
+
+//        $stmt = $dbh->prepare($sql);
+//        $stmt->bindValue(1,$request_user_id, PDO::PARAM_STR);
+//        $stmt->bindValue(2,$request_ymd, PDO::PARAM_STR);
+
+//        $stmt->bindValue(3,$request_starttime, PDO::PARAM_STR);
+//        $stmt->bindValue(4,$request_endtime, PDO::PARAM_STR);
+
+//        $stmt->bindValue(5,$request_starttime, PDO::PARAM_STR);
+//        $stmt->bindValue(6,$request_endtime, PDO::PARAM_STR);
+
+//        $stmt->bindValue(7,$request_starttime, PDO::PARAM_STR);
+//        $stmt->bindValue(8,$request_starttime, PDO::PARAM_STR);
+
+//        $stmt->bindValue(9,$request_endtime, PDO::PARAM_STR);
+//        $stmt->bindValue(10,$request_endtime, PDO::PARAM_STR);
+
+//        $stmt->execute();
+//	  $already_exist = (int)$stmt->fetchColumn();
+//	if ($already_exist > 0 ) {
 			// duplicate.
-		$res = array(
-		'status'=>'4',
-		'data'=>$rslt
-		);
-		goto exit_label;
-	}
+//		$res = array(
+//		'status'=>'4',
+//		'data'=>$rslt
+//		);
+//		goto exit_label;
+//	}
 
 	$sql = "INSERT INTO tbl_schedule_onetime (".
+//	$sql = "INSERT INTO tbl_schedule_onetime_test (".
         	"repetition_id,".
         	"user_id,".
         	"teacher_id,".
@@ -240,6 +256,7 @@ try {
 
 
 	$sql = "SELECT MAX(id) AS maxid FROM tbl_schedule_onetime";
+//	$sql = "SELECT MAX(id) AS maxid FROM tbl_schedule_onetime_test";
 	$stmt = $dbh->query($sql);
 	$rslt = $stmt->fetchAll(PDO::FETCH_ASSOC);
 	foreach ($rslt as $row) {

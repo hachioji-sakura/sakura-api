@@ -221,6 +221,24 @@ try {
 	$got_cancel_reason = $rslt['cancel_reason'];
 	$got_work_id = $rslt['work_id'];
 
+				// error check.
+	if ($request_type === 'rest' && $got_cancel!==' ') {
+				// already set. 
+		$res = array(
+		'status'=>'duplicate',
+		'cancel'=>$absent_id, 
+		);
+		goto exit_label;
+	} else if ($request_type === 'rest_cancel' && $got_cancel===' ') {
+				// not set. 
+		$res = array(
+		'status'=>'notset',
+		'cancel'=>$absent_id, 
+		);
+		goto exit_label;
+	}
+
+
 	if ( $got_lecture_id) {
 				// course id の取得
 		$sql = "SELECT course_id from tbl_lecture WHERE lecture_id= ?";
