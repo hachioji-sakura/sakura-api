@@ -414,7 +414,7 @@ try {
 			break;
 		}
 										// check how many lessons in a week .
-		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat WHERE delflag=0 AND user_id=? AND work_id=? AND (enddate IS NULL OR enddate > ?)";
+$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat WHERE delflag=0 AND user_id=? AND work_id=? AND kind='w' AND (enddate IS NULL OR enddate > ?)";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$got_user_id, PDO::PARAM_INT);
 		$stmt->bindValue(2,$got_work_id, PDO::PARAM_INT);
