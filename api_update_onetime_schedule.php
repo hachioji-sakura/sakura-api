@@ -18,6 +18,7 @@ if ($token != API_TOKEN) {
 	exit;
 }
 
+define('CANCEL_NOREASON','');
 define('CANCEL_REASON2','当日');
 define('CANCEL_REASON3','規定回数以上');
 define('CANCEL_REASON4','休講');
@@ -603,12 +604,14 @@ updatedb_label:
 		$stmt->execute();
 	} else if ($request_type==='presence') {
 				// 出欠確認での出席
-		$sql = "UPDATE tbl_schedule_onetime SET confirm = ? WHERE id = ?";
+		$sql = "UPDATE tbl_schedule_onetime SET cancel='',confirm = ? ,cancel_reason=? WHERE id = ?";
 //		$sql = "UPDATE tbl_schedule_onetime_test SET confirm = ? WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$request_confirm = 'f'; 
+		$request_cancel_reason = CANCEL_NOREASON; 
 		$stmt->bindValue(1,$request_confirm, PDO::PARAM_STR);
-		$stmt->bindValue(2,$request_id, PDO::PARAM_INT);
+		$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
+		$stmt->bindValue(3,$request_id, PDO::PARAM_INT);
 		$stmt->execute();
 	} else if ($request_type==='cancel') {
 				// 予定の取り消し
