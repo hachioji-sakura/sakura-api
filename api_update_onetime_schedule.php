@@ -294,6 +294,9 @@ try {
 	if ($request_cancel){
 		$sql .=" cancel = '$request_cancel', " ;
 	}
+	if ($_POST['cancel_reason']){
+		$sql .=" cancel_reason = '$request_cancel_reason', " ;
+	}
 	if ($request_alternate){
 		$sql .=" alternate = '$request_alternate', " ;
 	}
