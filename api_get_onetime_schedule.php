@@ -75,6 +75,10 @@ $request_updateendtime = $_GET['updateendtime'];
 $request_updateendtime = str_replace("'","",$request_updateendtime);
 $request_updateendtime = str_replace('"',"",$request_updateendtime);
 
+$request_work_id = $_GET['work_id'];
+$request_work_id = str_replace("'","",$request_work_id);
+$request_work_id = str_replace('"',"",$request_work_id);
+
 $defaultstartdate = "2019-01-01";
 
 try {
@@ -179,6 +183,9 @@ try {
 		if ($request_lecture_id) {
 			$sql .= " AND lecture_id='$request_lecture_id'";
 		}
+		if ($request_work_id) {
+			$sql .= " AND work_id='$request_work_id'";
+		}
 		if ($request_updatestartdate) {
 			// check date format.
 			sscanf($request_updatestartdate,'%d-%d-%d',$year,$month,$day);
@@ -236,6 +243,7 @@ try {
 			$updateenddatetime = $request_updateenddate.$request_updateendtime;
 			$sql .= " AND updatetime <= '$updateenddatetime' ";
 		}
+		
 		
 		$stmt = $dbh->query($sql);
 		$rslt = $stmt->fetchAll(PDO::FETCH_ASSOC);
