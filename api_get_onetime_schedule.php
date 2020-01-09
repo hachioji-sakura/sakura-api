@@ -27,6 +27,14 @@ $request_id = $_GET['id'];
 $request_id = str_replace("'","",$request_id);
 $request_id = str_replace('"',"",$request_id);
 
+$request_start_id = $_GET['start_id'];
+$request_start_id = str_replace("'","",$request_start_id);
+$request_start_id = str_replace('"',"",$request_start_id);
+
+$request_end_id = $_GET['end_id'];
+$request_end_id = str_replace("'","",$request_end_id);
+$request_end_id = str_replace('"',"",$request_end_id);
+
 $request_target_id = $_GET['target_id'];
 $request_target_id = str_replace("'","",$request_target_id);
 $request_target_id = str_replace('"',"",$request_target_id);
@@ -170,6 +178,12 @@ try {
 
 		if ($request_id) {
 			$sql .= " AND id='$request_id'";
+		}
+		if ($request_start_id) {
+			$sql .= " AND id>= '$request_start_id'";
+		}
+		if ($request_end_id) {
+			$sql .= " AND id<= '$request_end_id'";
 		}
 		if ($request_target_id) {
 			$sql .= " AND user_id='$request_target_id'";
