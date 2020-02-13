@@ -3,8 +3,10 @@ ini_set('mbstring.internal_encoding', 'UTF-8');
 ini_set( 'display_errors', 0 );
 require_once("../sakura/schedule/const/const.inc");
 require_once("../sakura/schedule/func.inc");
-require_once("./const.inc");
-require_once("./func.inc");
+//require_once("./const.inc");
+//require_once("./func.inc");
+require_once("./upd_const.inc");
+require_once("./upd_func.inc");
 
 define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
 
@@ -193,13 +195,10 @@ $request_type = str_replace('"',"",$request_type);
 
 $now = date('Y-m-d H:i:s');
 
-
 try {
-
 				// getting necessary information of the target data.
 	$sql ="SELECT user_id,teacher_id,student_no,ymd,lecture_id,place_id,altsched_id,trial_id,cancel,cancel_reason,work_id,delflag " ;
 	$sql .=" FROM tbl_schedule_onetime WHERE id = ? " ;
-//	$sql .=" FROM tbl_schedule_onetime_test WHERE id = ? " ;
 	$stmt = $dbh->prepare($sql);
 	$stmt->bindValue(1,$request_id, PDO::PARAM_INT);
 	$stmt->execute();
@@ -215,15 +214,19 @@ try {
 	$got_student_no = $rslt['student_no'];
 	$got_ymd = $rslt['ymd'];   
 	$got_ym = mb_substr($got_ymd,0,7);   // getting year month data like 2020-01 format.
+	$got_y = mb_substr($got_ymd,0,4);   // getting year data like 2020 format.
+	$got_m = mb_substr($got_ymd,5,2);   // getting month data like 01 format.
 	$got_lecture_id = (int)$rslt['lecture_id'];
 	$got_place_id = (int)$rslt['place_id'];
 	$got_trial_id = (int)$rslt['trial_id'];
 	$got_altsched_id = (int)$rslt['altsched_id'];
 	$got_cancel = $rslt['cancel'];
 	$got_cancel_reason = $rslt['cancel_reason'];
+	if ($got_cancel_reason == ' ' ){
+		$got_cancel_reason = '';	// change space into null character.
+	}
 	$got_work_id = $rslt['work_id'];
 	$got_delflag = $rslt['delflag'];
-
 				// error check.
 	if ($request_type === 'rest' && ( $got_cancel && $got_cancel !==' ')) {
 				// already set. 
@@ -241,20 +244,19 @@ try {
 		goto exit_label;
 	}
 
-
 	if ( $got_lecture_id) {
 				// course id の取得
-		$sql = "SELECT course_id from tbl_lecture WHERE lecture_id= ?";
+		$sql = "SELECT course_id,lesson_id from tbl_lecture WHERE lecture_id= ?";
 		$stmt = $db->prepare($sql);
 		$stmt->bindValue(1,$got_lecture_id, PDO::PARAM_INT);
 		$stmt->execute();
 		$rslt = $stmt->fetch(PDO::FETCH_ASSOC);
 						// the data is determined uniquely.
 		$got_course_id = $rslt['course_id'];
+		$got_lesson_id = $rslt['lesson_id'];
 	}
 
 	$sql = "UPDATE tbl_schedule_onetime SET ";
-//	$sql = "UPDATE tbl_schedule_onetime_test SET ";
 	if ($request_repetition_id){
 		$sql .=" repetition_id = '$request_repetition_id', " ;
 	}
@@ -330,7 +332,7 @@ try {
 	$stmt->execute();
 
 	$absent_id = null; 	// Initialization
-	$alaternate = 'false'; 	// Initialization
+	$alternate = 'false'; 	// Initialization
 				// if the request is for absent, judge what kind of absent it is.
 
 	$absent_month_start = $got_ym.'-01';  			// beggining of the month.
@@ -342,12 +344,27 @@ try {
 	$month_end = getdate($absent_month_end_ts); 			
 	$absent_month_end = $month_end['year'].'-'.$month_end['mon'].'-'.$month_end['mday'];  
 
+	$absent_2month = ($got_m-1)/2;  			
+	$absent_2month = (integer)$absent_2month *2 +1;  			// beggining of the odd month.
+	$absent_2month_start = $got_y.'-'.$absent_2month.'-01';  			// beggining of the month.
+	$dateObj = new DateTime($absent_2month_start);   
+	$absent_2month_start_ts = $dateObj ->getTimestamp();  
+	$absent_2month_month = date('m',$absent_2month_start_ts);  
+	$absent_2month_end_ts = mktime(0,0,0,$absent_month+2,0,$got_y);  // the end of the month 
+	$month_end = getdate($absent_2month_end_ts); 			
+	$absent_2month_end = $month_end['year'].'-'.$month_end['mon'].'-'.$month_end['mday'];  
+
+	$restcare_inf = get_restcare_inf($dbc,$got_user_id,$got_ymd);
+	$holiday_is_a1 = $restcare_inf[0];		// true if the student is specified and the day is holiday.
+	$rest_is_a1 = $restcare_inf[1];			// true if the student is specified as rest is a1.
+	$first_rest_is_a1 = $restcare_inf[2];		// true if the student is specified as first rest is a1.
+	$rest_add_exchange_enable = $restcare_inf[3];	// true if the student is specified as add exchange enable.
+
 	if ($request_type==='rest' ){
 						// 休み連絡
 		if ($got_user_id > 100000 ) { // teacher or staff. No need to check absent category.
 			$absent_id = 'a';
 			$sql = "UPDATE tbl_schedule_onetime SET cancel = ? WHERE id = ?";	
-//			$sql = "UPDATE tbl_schedule_onetime_test SET cancel = ? WHERE id = ?";	
 			$stmt = $dbh->prepare($sql);
 			$stmt->bindValue(1,$absent_id, PDO::PARAM_STR);
 			$stmt->bindValue(2,$request_id, PDO::PARAM_INT);
@@ -379,37 +396,41 @@ try {
 		case '5':	// Winter seminar.
 		case '6':	// Spring seminar.
 		case '9':	// Weekend seminar.
-			if ( $limitdate_timestamp > $current_timestamp ) { // logical delete.
- 				$sql = "UPDATE tbl_schedule_onetime SET delflag = 1 ,";
-//     				$sql = "UPDATE tbl_schedule_onetime_test SET delflag = 1 ,";
-                		$sql .=" deletetime = ?, updateuser = ? WHERE id = ? " ;
-
+			if ( $limitdate_timestamp > $current_timestamp ) { // absent1.
+				$absent_id = 'a1';
+ 				$sql = "UPDATE tbl_schedule_onetime SET cancel=? ,";
+                		$sql .=" updatetime = ?, updateuser = ? WHERE id = ? " ;
                			$stmt = $dbh->prepare($sql);
                 		$id = (int) $request_id;
-                		$stmt->bindValue(1, $now, PDO::PARAM_STR);
-                		$stmt->bindValue(2, $request_updateuser, PDO::PARAM_INT);
-                		$stmt->bindValue(3, $request_id, PDO::PARAM_INT);
+                		$stmt->bindValue(1, $absent_id, PDO::PARAM_STR);
+                		$stmt->bindValue(2, $now, PDO::PARAM_STR);
+                		$stmt->bindValue(3, $request_updateuser, PDO::PARAM_INT);
+                		$stmt->bindValue(4, $request_id, PDO::PARAM_INT);
                 		$stmt->execute();
 
-                		$delflag = 1;
         			$sql = "INSERT INTO tbl_schedule_onetime_history (".
                			"id,".
-                		"delflag,".
-                		"deletetime,".
+                		"cancel,".
+                		"updatetime,".
                 		"updateuser)".
                 		" VALUES ( ?, ?, ?, ? )";
 
                 		$stmt = $dbh->prepare($sql);
                 		$stmt->bindValue(1,$request_id, PDO::PARAM_INT);
-                		$stmt->bindValue(2,$delflag, PDO::PARAM_INT);
+                		$stmt->bindValue(2,$absent_id, PDO::PARAM_INT);
                 		$stmt->bindValue(3,$now, PDO::PARAM_STR);
                 		$stmt->bindValue(4,$request_updateuser, PDO::PARAM_INT);
                 		$stmt->execute();
-				$absent_id = '';
 				goto afterupdate_label;
 			} else if ( $limitdate_timestamp < $current_timestamp ) {
-				$request_cancel_reason = CANCEL_REASON2 ; // Today
-				$absent_id = 'a2';
+						// $restcare_inf:'none','a1always','a1iflessthan2','a1onholiday'
+				if ($holiday_is_a1 == true || $rest_is_a1 == true || $first_rest_is_a1 == true ){
+					$absent_id = 'a1';
+					$request_cancel_reason = '';
+				} else {
+					$absent_id = 'a2';
+					$request_cancel_reason = CANCEL_REASON2 ; // Today
+				}
 				goto updatedb_label;
 			}
 			break;
@@ -418,13 +439,28 @@ try {
 			break;
 		}
 										// check how many lessons in a week .
-$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat WHERE delflag=0 AND user_id=? AND work_id=? AND kind='w' AND (enddate IS NULL OR enddate > ?)";
+		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat A,tbl_lecture B WHERE A.delflag=0 ";
+		$sql .= " AND A.user_id=? AND A.work_id=? AND A.kind='w' AND (A.enddate IS NULL OR A.enddate > ?)";
+		$sql .= " AND A.lecture_id=B.lecture_id AND B.lesson_id=? ";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$got_user_id, PDO::PARAM_INT);
 		$stmt->bindValue(2,$got_work_id, PDO::PARAM_INT);
 		$stmt->bindValue(3,$got_ymd, PDO::PARAM_STR);
+		$stmt->bindValue(4,$got_lesson_id, PDO::PARAM_INT);
 		$stmt->execute();
-		$absent_threshold = (int)$stmt->fetchColumn();
+		$absent_threshold_weekly = (int)$stmt->fetchColumn();
+
+										// check how many lessons in a month .
+		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat A,tbl_lecture B WHERE A.delflag=0 ";
+		$sql .= " AND A.user_id=? AND A.work_id=? AND A.kind='m' AND (A.enddate IS NULL OR A.enddate > ?)";
+		$sql .= " AND A.lecture_id=B.lecture_id AND B.lesson_id=? ";
+		$stmt = $dbh->prepare($sql);
+		$stmt->bindValue(1,$got_user_id, PDO::PARAM_INT);
+		$stmt->bindValue(2,$got_work_id, PDO::PARAM_INT);
+		$stmt->bindValue(3,$got_ymd, PDO::PARAM_STR);
+		$stmt->bindValue(4,$got_lesson_id, PDO::PARAM_INT);
+		$stmt->execute();
+		$absent_threshold_monthly = (int)$stmt->fetchColumn();
 
 		if ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY){
 			$cancel_kind = 'a1';	// 休み１
@@ -432,19 +468,48 @@ $sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat WHERE delflag=0 AND us
 			$cancel_kind = 'a2';	// 休み２
 		}
 							// 対象月のcancel_reason なしの休みの数を調べる
-		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime WHERE delflag = 0 AND ymd BETWEEN ? AND ? AND cancel = ?"  
-//		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime_test WHERE delflag = 0 AND ymd BETWEEN ? AND ? AND cancel = ?"  
-			." AND user_id = ? AND work_id = ? AND cancel_reason = ' '" ; 
-		$stmt = $dbh->prepare($sql);
-		$stmt->bindValue(1,$absent_month_start, PDO::PARAM_STR);
-		$stmt->bindValue(2,$absent_month_end, PDO::PARAM_STR);
-		$stmt->bindValue(3,$cancel_kind, PDO::PARAM_STR);
-		$stmt->bindValue(4,$got_user_id, PDO::PARAM_INT);
-		$stmt->bindValue(5,$got_work_id, PDO::PARAM_INT);
-		$stmt->execute();
-		$absent_cnt = (int)$stmt->fetchColumn();
+		if ($absent_threshold_monthly == 0 ){	
+							// weekly chedule.
+			$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime A,tbl_lecture B "; 
+			$sql .= "WHERE A.lecture_id=B.lecture_id AND A.delflag = 0 AND A.ymd BETWEEN ? AND ? AND A.cancel = ?" ;
+			$sql .=" AND A.user_id=? AND A.work_id = ? AND (A.cancel_reason = ' ' OR A.cancel_reason='' OR A.cancel_reason IS NULL)" ; 
+			$sql .=" AND B.lesson_id=? " ; 
+			if ($first_rest_is_a1 == true && $cancel_kind == 'a2' ) {
+				$sql = $sql . " OR cancel=? "; 		// need to check 'a1' also.
+			}
+			$stmt = $dbh->prepare($sql);
+			$stmt->bindValue(1,$absent_month_start, PDO::PARAM_STR);
+			$stmt->bindValue(2,$absent_month_end, PDO::PARAM_STR);
+			$stmt->bindValue(3,$cancel_kind, PDO::PARAM_STR);
+			$stmt->bindValue(4,$got_user_id, PDO::PARAM_INT);
+			$stmt->bindValue(5,$got_work_id, PDO::PARAM_INT);
+			$stmt->bindValue(6,$got_lesson_id, PDO::PARAM_INT);
+			if ($first_rest_is_a1 == true && $cancel_kind == 'a2' ) {
+				$cancel_kind2 = 'a1';			// need to check 'a1' also.
+				$stmt->bindValue(6,$cancel_kind2, PDO::PARAM_STR);
+			}
 
-		$request_cancel_reason = ' ' ; 		// Initialization.
+			$stmt->execute();
+			$absent_cnt = (int)$stmt->fetchColumn();
+			$absent_threshold = $absent_threshold_weekly;
+		} else {			
+							// monthly schedule.
+			$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime A,tbl_lecture B "; 
+			$sql .= "WHERE A.lecture_id=B.lecture_id AND A.delflag = 0 AND A.ymd BETWEEN ? AND ? AND A.cancel = ?" ;
+			$sql .=" AND A.user_id=? AND A.work_id = ? AND (A.cancel_reason = ' ' OR A.cancel_reason='' OR A.cancel_reason IS NULL)" ; 
+			$sql .=" AND B.lesson_id=? " ; 
+			$stmt = $dbh->prepare($sql);
+			$stmt->bindValue(1,$absent_2month_start, PDO::PARAM_STR);
+			$stmt->bindValue(2,$absent_2month_end, PDO::PARAM_STR);
+			$stmt->bindValue(3,$cancel_kind, PDO::PARAM_STR);
+			$stmt->bindValue(4,$got_user_id, PDO::PARAM_INT);
+			$stmt->bindValue(5,$got_work_id, PDO::PARAM_INT);
+			$stmt->bindValue(6,$got_lesson_id, PDO::PARAM_INT);
+			$stmt->execute();
+			$absent_cnt = (int)$stmt->fetchColumn();
+			$absent_threshold = $absent_threshold_monthly / 2;	// 月２回のとき２カ月に１回がリミット
+		}
+		$request_cancel_reason = '' ; 		// Initialization.
 		if ($got_trial_id !== 0) {
 					// 体験の休み
 			$absent_id = 'a2';
@@ -457,27 +522,45 @@ $sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat WHERE delflag=0 AND us
 			if ( $limitdate_timestamp > $current_timestamp ) {
 				$request_cancel_reason = CANCEL_REASON5 ;
 			} else {
-				$request_cancel_reason = null;
+				$request_cancel_reason = '';
 			}
 		} else if ($absent_cnt < $absent_threshold && $limitdate_timestamp > $current_timestamp ) {
+					// 許容範囲の休みで事前連絡の場合
 			if ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY ){
 				$absent_id = 'a1';
 			} else {
-				$absent_id = 'a2';
+				if ($holiday_is_a1 == true || $rest_is_a1 == true || $first_rest_is_a1 == true ){
+					$absent_id = 'a1';
+				} else {
+					$absent_id = 'a2';
+				}
 			}
-			$request_cancel_reason = ' ' ;
+			$request_cancel_reason = '' ;
 		} else if ($absent_cnt >= $absent_threshold) {
-				// more than threshold.
-			$absent_id = 'a2';
-			$request_cancel_reason = CANCEL_REASON3 ;
+								// 許容範囲を超えた
+			if ($holiday_is_a1 == true || $rest_is_a1 == true ){
+				$absent_id = 'a1';
+				$request_cancel_reason = '' ;
+			} else {
+				$absent_id = 'a2';
+				if ($rest_add_exchange_enable == true ){
+					$request_cancel_reason = '';
+				} else {
+					$request_cancel_reason = CANCEL_REASON3 ;
+				}
+			}
 		} else {
-				// over the time limit.
-			$absent_id = 'a2';
-			$request_cancel_reason = CANCEL_REASON2 ;
+								//  当日。許容範囲は超えていない
+			if ($holiday_is_a1 == true || $rest_is_a1 == true || $first_rest_is_a1 == true ){
+				$absent_id = 'a1';
+				$request_cancel_reason = '' ;
+			} else {
+				$absent_id = 'a2';
+				$request_cancel_reason = CANCEL_REASON2 ;
+			}
 		}
 updatedb_label:
 		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
-//		$sql = "UPDATE tbl_schedule_onetime_test SET cancel = ? ,cancel_reason = ? WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$absent_id, PDO::PARAM_STR);
 		$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
@@ -485,11 +568,10 @@ updatedb_label:
 		$stmt->execute();
 
 	} else if ($request_type==='special_cancel_reason') {
-					 // processing for special cancel reason.
+						 // processing for special cancel reason.
 		$null_cancel_reason = '';
 		$absent_id = 'a2';
 		$request_cancel_reason = '' ;
-//		$sql = "UPDATE tbl_schedule_onetime_test SET cancel = ? ,cancel_reason = ? WHERE id = ?";
 		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$absent_id, PDO::PARAM_STR);
@@ -498,75 +580,47 @@ updatedb_label:
 		$stmt->execute();
 
 	} else if ($request_type==='rest_cancel') {
-					// request for cancelation of the rest.
-		if ($got_delflag == 1) {
-					// already deleted. activate the data.
-//			$sql = "UPDATE tbl_schedule_onetime_test SET delflag = 0 WHERE id = ?";
-			$sql = "UPDATE tbl_schedule_onetime SET delflag = 0 WHERE id = ?";
-			$stmt = $dbh->prepare($sql);
-			$stmt->bindValue(1,$request_id, PDO::PARAM_INT);
-			$stmt->execute();
-
-                	$delflag = 0;
-        		$sql = "INSERT INTO tbl_schedule_onetime_history (".
-               		"id,".
-                	"delflag,".
-                	"deletetime,".
-                	"updateuser)".
-                	" VALUES ( ?, ?, ?, ? )";
-
-                	$stmt = $dbh->prepare($sql);
-                	$stmt->bindValue(1,$request_id, PDO::PARAM_INT);
-                	$stmt->bindValue(2,$delflag, PDO::PARAM_INT);
-                	$stmt->bindValue(3,$now, PDO::PARAM_STR);
-                	$stmt->bindValue(4,$request_updateuser, PDO::PARAM_INT);
-                	$stmt->execute();
-			$absent_id = '';
-			goto afterupdate_label;
-
-		} else {
-			if (($got_cancel ==='a2' && $got_cancel_reason === ' ') ||
-			( ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY) && $got_cancel==='a1' && $got_cancel_reason===' ')) {
-				// 当該月に休み２規定回数以上が既に入力されていないかを調べる
-			$cancel_kind = 'a2';
-			$sql = "SELECT id FROM tbl_schedule_onetime WHERE delflag = 0 AND ymd BETWEEN ? AND ? AND cancel = ?"  
-//			$sql = "SELECT id FROM tbl_schedule_onetime_test WHERE delflag = 0 AND ymd BETWEEN ? AND ? AND cancel = ?"  
-			." AND user_id = ? AND lecture_id = ? AND cancel_reason = ?" ; 
-			$stmt = $dbh->prepare($sql);
-			$stmt->bindValue(1,$absent_month_start, PDO::PARAM_STR);
-			$stmt->bindValue(2,$absent_month_end, PDO::PARAM_STR);
-			$stmt->bindValue(3,$cancel_kind, PDO::PARAM_STR);
-			$stmt->bindValue(4,$got_user_id, PDO::PARAM_INT);
-			$stmt->bindValue(5,$got_lecture_id, PDO::PARAM_INT);
-			$target_cancel_reason = CANCEL_REASON3;
-			$stmt->bindValue(6,$target_cancel_reason, PDO::PARAM_STR);
-			$stmt->execute();
-			$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-			$row_cnt = count($result);
-				if ($row_cnt > 0) {
-						//	最初の休み２規定回数以上のcancel_reasonの値を空白にする	
-				foreach ($result as $row ) {
-							// 最初の１行のcancel列を更新し、cancel_reasonを空白にする
-					$sql = "UPDATE tbl_schedule_onetime SET cancel = ?,cancel_reason = ' ' WHERE id=?";
-//					$sql = "UPDATE tbl_schedule_onetime_test SET cancel = ?,cancel_reason = ' ' WHERE id=?";
-					$stmt = $dbh->prepare($sql);
-					$stmt->bindValue(1,$got_cancel, PDO::PARAM_STR);
-					$stmt->bindValue(2,$row['id'], PDO::PARAM_INT);
-					$stmt->execute();
-					break; // foreach
-					}
+							// request for cancelation of the rest.
+		if (($got_cancel ==='a2' && $got_cancel_reason === '') ||
+		($got_cancel ==='a1' && $got_cancel_reason === '' && $first_rest_is_a1 == true ) ||
+		( ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY) && $got_cancel==='a1' && $got_cancel_reason==='')) {
+			// 当該月に休み２規定回数以上が既に入力されていないかを調べる
+		$cancel_kind = 'a2';
+		$sql = "SELECT id FROM tbl_schedule_onetime WHERE delflag = 0 AND ymd BETWEEN ? AND ? AND cancel = ?"  
+		." AND user_id = ? AND lecture_id = ? AND cancel_reason = ?" ; 
+		$stmt = $dbh->prepare($sql);
+		$stmt->bindValue(1,$absent_month_start, PDO::PARAM_STR);
+		$stmt->bindValue(2,$absent_month_end, PDO::PARAM_STR);
+		$stmt->bindValue(3,$cancel_kind, PDO::PARAM_STR);
+		$stmt->bindValue(4,$got_user_id, PDO::PARAM_INT);
+		$stmt->bindValue(5,$got_lecture_id, PDO::PARAM_INT);
+		$target_cancel_reason = CANCEL_REASON3;
+		$stmt->bindValue(6,$target_cancel_reason, PDO::PARAM_STR);
+		$stmt->execute();
+		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$row_cnt = count($result);
+		if ($row_cnt > 0) {
+					//	最初の休み２規定回数以上のcancel_reasonの値を空白にする	
+			foreach ($result as $row ) {
+						// 最初の１行のcancel列を更新し、cancel_reasonを空白にする
+						// 対象が複数あっても最初の１行のみ
+				$sql = "UPDATE tbl_schedule_onetime SET cancel = ?,cancel_reason = '' WHERE id=?";
+				$stmt = $dbh->prepare($sql);
+				$stmt->bindValue(1,$got_cancel, PDO::PARAM_STR);
+				$stmt->bindValue(2,$row['id'], PDO::PARAM_INT);
+				$stmt->execute();
+				break;		 // foreach
 				}
 			}
-			$request_cancel = ' '; 			// reset the field
-			$request_cancel_reason = ' '; 		// reset the field
-			$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
-//			$sql = "UPDATE tbl_schedule_onetime_test SET cancel = ? ,cancel_reason = ? WHERE id = ?";
-			$stmt = $dbh->prepare($sql);
-			$stmt->bindValue(1,$request_cancel, PDO::PARAM_STR);
-			$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
-			$stmt->bindValue(3,$request_id, PDO::PARAM_INT);
-			$stmt->execute();
 		}
+		$request_cancel = ''; 			// reset the field
+		$request_cancel_reason = ''; 		// reset the field
+		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
+		$stmt = $dbh->prepare($sql);
+		$stmt->bindValue(1,$request_cancel, PDO::PARAM_STR);
+		$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
+		$stmt->bindValue(3,$request_id, PDO::PARAM_INT);
+		$stmt->execute();
 		$absent_id = null;
 			
 	} else if ($request_type==='lecture_cancel') {
@@ -574,7 +628,6 @@ updatedb_label:
 		$request_cancel = 'a1'; 			// 休み１
 		$request_cancel_reason = CANCEL_REASON4; 		// 休講
 		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
-//		$sql = "UPDATE tbl_schedule_onetime_test SET cancel = ? ,cancel_reason = ? WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$request_cancel, PDO::PARAM_STR);
 		$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
@@ -588,7 +641,7 @@ updatedb_label:
 			// 生徒か事務員かで'calcel'列および'cancel_reason'列、Confirm列の値が変わる
 		if ($got_user_id > 100000 ) { // Staff or teacher.
 			$request_cancel = 'a';
-			$request_cancel_reason = ' ';
+			$request_cancel_reason = '';
 			$request_confirm = 'a';
 			$absent_id = 'a';
 		} else {
@@ -598,7 +651,6 @@ updatedb_label:
 			$absent_id = 'a2';
 		}
 		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ?, confirm=?  WHERE id = ?";
-//		$sql = "UPDATE tbl_schedule_onetime_test SET cancel = ? ,cancel_reason = ?, confirm=?  WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$request_cancel, PDO::PARAM_STR);
 		$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
@@ -608,7 +660,6 @@ updatedb_label:
 	} else if ($request_type==='presence') {
 				// 出欠確認での出席
 		$sql = "UPDATE tbl_schedule_onetime SET cancel='',confirm = ? ,cancel_reason=? WHERE id = ?";
-//		$sql = "UPDATE tbl_schedule_onetime_test SET confirm = ? WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$request_confirm = 'f'; 
 		$request_cancel_reason = CANCEL_NOREASON; 
@@ -619,7 +670,6 @@ updatedb_label:
 	} else if ($request_type==='cancel') {
 				// 予定の取り消し
 		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? WHERE id = ?";
-//		$sql = "UPDATE tbl_schedule_onetime_test SET cancel = ? WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$request_cancel = 'c'; 
 		$stmt->bindValue(1,$request_cancel, PDO::PARAM_STR);
@@ -628,7 +678,6 @@ updatedb_label:
 	} else if ($request_type==='confirm') {
 			// 仮スケジュールの先生確認状態
 		$sql = "UPDATE tbl_schedule_onetime SET temporary = ? WHERE id = ?";
-//		$sql = "UPDATE tbl_schedule_onetime_test SET temporary = ? WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$request_temporary = 10; 
 		$stmt->bindValue(1,$request_temporary, PDO::PARAM_INT);
@@ -637,7 +686,6 @@ updatedb_label:
 	} else if ($request_type==='fix') {
 			// 仮スケジュールの確定
 		$sql = "UPDATE tbl_schedule_onetime SET temporary = ? WHERE id = ?";
-//		$sql = "UPDATE tbl_schedule_onetime_test SET temporary = ? WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$request_temporary = 110; 
 		$stmt->bindValue(1,$request_temporary, PDO::PARAM_INT);
@@ -660,7 +708,6 @@ updatedb_label:
 										// check how many lessons in a week .
 		$sql ="SELECT ymd,cancel,cancel_reason " ;
 		$sql .=" FROM tbl_schedule_onetime WHERE id = ? " ;
-//		$sql .=" FROM tbl_schedule_onetime_test WHERE id = ? " ;
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$request_id, PDO::PARAM_INT);
 		$stmt->execute();
@@ -670,9 +717,9 @@ updatedb_label:
 		$got_cancel = $rslt['cancel'];
 		$got_cancel_reason = $rslt['cancel_reason'];
 		$limitdate = null;
-		$nextmonth = '+1 month';
+		$next2month = '+2 month';
         	$dateObj = new DateTime($got_ymd);
-		$dateObj->add(DateInterval::createFromDateString($nextmonth));
+		$dateObj->add(DateInterval::createFromDateString($next2month));
         	$alt_limit_ts = $dateObj -> getTimestamp();
         	$alt_limit = getdate($alt_limit_ts);
         	$alt_limitdate = $alt_limit['year'].'-'.$alt_limit['mon'].'-'.$alt_limit['mday'];
@@ -777,7 +824,6 @@ afterupdate_label:
 	       	"delflag,".
 	       	"comment".
               " FROM tbl_schedule_onetime WHERE id='$request_id'";
-//              " FROM tbl_schedule_onetime_test WHERE id='$request_id'";
 
 	        $stmt = $dbh->query($sql);
                 $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -798,6 +844,52 @@ exit_label:
 		'status'=>'error',
 		'cancel'=>$absent_id, 
 		);
+
+}
+
+function get_restcare_inf(&$dbc,$got_user_id,$got_ymd){
+		// this function restcare inf from common.user_tags.
+		// $restcare_inf:'none','a1always','exchangeenable','a1onholiday'
+
+				// initialization.
+$holiday_is_a1 = false;
+$rest_is_a1 = false;
+$first_rest_is_a1 = false;
+$rest_add_exchange_enable = false;
+try {
+	$sql = "SELECT tag_value from user_tags WHERE user_id=? AND tag_key='student_type'";
+	$stmt = $dbc->prepare($sql);
+	$stmt->bindValue(1,$got_user_id, PDO::PARAM_INT);
+	$stmt->execute();
+	$student_type_array = $stmt->fetchAll(PDO::FETCH_ASSOC);
+	foreach ($student_type_array as $student_type) {
+
+		$got_student_type = $student_type['tag_value'];
+		if (mb_strpos($got_student_type,'restcare_holiday_is_a1') !== FALSE ){
+			$sql = "SELECT is_public_holiday from holidays WHERE date=? ";
+			$stmt = $dbc->prepare($sql);
+			$stmt->bindValue(1,$got_ymd, PDO::PARAM_STR);
+			$stmt->execute();
+			$holiday_array = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			foreach ($holiday_array as $holiday_row) {
+				if($holiday_row['is_public_holiday'] == 1){
+					$holiday_is_a1 = true;
+				}
+			}
+		} else if (mb_strpos($got_student_type,'restcare_rest_is_a1')!== FALSE ){
+			$rest_is_a1 = true;
+		} else if (mb_strpos($got_student_type,'restcare_first_rest_is_a1')!== FALSE ){
+			$first_rest_is_a1 = true;
+		} else if (mb_strpos($got_student_type,'restcare_rest_add_exchange_enable')!== FALSE ){
+			$rest_add_exchange_enable = true;
+		} 	// end of switch.
+	}
+	$restcare_inf = array($holiday_is_a1,$rest_is_a1,$first_rest_is_a1,$rest_add_exchange_enable);
+exit_label:
+return($restcare_inf);
+}catch (PDOException $e){
+	return('DB Access Error.');
+}
 
 }
 
