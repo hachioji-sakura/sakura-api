@@ -40,7 +40,8 @@ try {
 		"grade_adj,".
 		"fee_free,".
 		"gender, ".
-		"mail_address ".
+		"mail_address, ".
+		"yuge_price ".
 		"FROM tbl_member ".
 		"LEFT JOIN tbl_grade_name ON tbl_grade_name.grade_id=tbl_member.grade ".
 		"WHERE del_flag!=1";
