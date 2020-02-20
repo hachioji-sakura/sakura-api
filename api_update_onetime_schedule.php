@@ -5,8 +5,8 @@ require_once("../sakura/schedule/const/const.inc");
 require_once("../sakura/schedule/func.inc");
 //require_once("./const.inc");
 //require_once("./func.inc");
-require_once("./upd_const.inc");
-require_once("./upd_func.inc");
+//require_once("./upd_const.inc");
+//require_once("./upd_func.inc");
 
 define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
 
