@@ -113,7 +113,8 @@ try {
 		"entrytime,".
 		"updatetime,".
 		"updateuser,".
-		"comment".
+		"comment,".
+		"delflag".
 		" FROM tbl_schedule_onetime WHERE delflag!=1".
 		" AND user_id != 200000 AND user_id != 100000 AND teacher_id != 100000";
 
