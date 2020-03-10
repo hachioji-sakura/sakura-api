@@ -106,6 +106,7 @@ try {
 		"cancel,".
 		"cancel_reason,".
 		"altsched_id,".
+		"altlimitdate,".
 		"trial_id,".
 		"place_id,".
 		"temporary,".
@@ -273,7 +274,7 @@ try {
 			$limitdate = null;
 			$got_ymd = $row['ymd'];
 			// $got_ym = mb_substr($got_ymd,0,7); // getting year month data.
-			$nextmonth = '+1 month';
+			$nextmonth = '+2 month';
 			$dateObj = new DateTime($got_ymd);
 			$dateObj->add(DateInterval::createFromDateString($nextmonth));
 			$alt_limit_ts = $dateObj->getTimestamp();
