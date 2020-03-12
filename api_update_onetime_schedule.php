@@ -3,12 +3,6 @@ ini_set('mbstring.internal_encoding', 'UTF-8');
 ini_set( 'display_errors', 0 );
 require_once("../sakura/schedule/const/const.inc");
 require_once("../sakura/schedule/func.inc");
-//require_once("./const.inc");
-//require_once("./func.inc");
-//require_once("./upd_const.inc");
-//require_once("./upd_func.inc");
-
-define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
 
 $http_header = getallheaders();
 $token = "";
@@ -157,6 +151,10 @@ $request_altsched_id = $_POST['altsched_id'];
 $request_altsched_id = str_replace("'","",$request_altsched_id);
 $request_altsched_id = str_replace('"',"",$request_altsched_id);
 
+$request_altlimitdate = $_POST['altlimitdate'];
+$request_altlimitdate = str_replace("'","",$request_altlimitdate);
+$request_altlimitdate = str_replace('"',"",$request_altlimitdate);
+
 $request_trial_id = $_POST['trial_id'];
 $request_trial_id = str_replace("'","",$request_trial_id);
 $request_trial_id = str_replace('"',"",$request_trial_id);
@@ -304,6 +302,9 @@ try {
 	}
 	if ($request_altsched_id){
 		$sql .=" altsched_id = '$request_altsched_id', " ;
+	}
+	if ($request_altlimitdate){
+		$sql .=" altlimitdate = '$request_altlimitdate', " ;
 	}
 	if ($request_trial_id){
 		$sql .=" trial_id = '$request_trial_id', " ;
@@ -560,7 +561,7 @@ try {
 			}
 		}
 updatedb_label:
-		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
+		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ?,altlimitdate=null WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$absent_id, PDO::PARAM_STR);
 		$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
@@ -572,7 +573,7 @@ updatedb_label:
 		$null_cancel_reason = '';
 		$absent_id = 'a2';
 		$request_cancel_reason = '' ;
-		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
+		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ?,altlimitdate=null WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$absent_id, PDO::PARAM_STR);
 		$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
@@ -604,7 +605,7 @@ updatedb_label:
 			foreach ($result as $row ) {
 						// 最初の１行のcancel列を更新し、cancel_reasonを空白にする
 						// 対象が複数あっても最初の１行のみ
-				$sql = "UPDATE tbl_schedule_onetime SET cancel = ?,cancel_reason = '' WHERE id=?";
+				$sql = "UPDATE tbl_schedule_onetime SET cancel = ?,cancel_reason = '',altlimitdate=null WHERE id=?";
 				$stmt = $dbh->prepare($sql);
 				$stmt->bindValue(1,$got_cancel, PDO::PARAM_STR);
 				$stmt->bindValue(2,$row['id'], PDO::PARAM_INT);
@@ -615,7 +616,7 @@ updatedb_label:
 		}
 		$request_cancel = ''; 			// reset the field
 		$request_cancel_reason = ''; 		// reset the field
-		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
+		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ?,altlimitdate=null WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$request_cancel, PDO::PARAM_STR);
 		$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
@@ -627,7 +628,7 @@ updatedb_label:
 									// 休講
 		$request_cancel = 'a1'; 			// 休み１
 		$request_cancel_reason = CANCEL_REASON4; 		// 休講
-		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? WHERE id = ?";
+		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? ,cancel_reason = ? ,altlimitdate=null WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$request_cancel, PDO::PARAM_STR);
 		$stmt->bindValue(2,$request_cancel_reason, PDO::PARAM_STR);
@@ -659,7 +660,7 @@ updatedb_label:
 		$stmt->execute();
 	} else if ($request_type==='presence') {
 				// 出欠確認での出席
-		$sql = "UPDATE tbl_schedule_onetime SET cancel='',confirm = ? ,cancel_reason=? WHERE id = ?";
+		$sql = "UPDATE tbl_schedule_onetime SET cancel='',confirm = ? ,cancel_reason=?,altlimitdate=null WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$request_confirm = 'f'; 
 		$request_cancel_reason = CANCEL_NOREASON; 
@@ -669,7 +670,7 @@ updatedb_label:
 		$stmt->execute();
 	} else if ($request_type==='cancel') {
 				// 予定の取り消し
-		$sql = "UPDATE tbl_schedule_onetime SET cancel = ? WHERE id = ?";
+		$sql = "UPDATE tbl_schedule_onetime SET cancel = ?,altlimitdate=null WHERE id = ?";
 		$stmt = $dbh->prepare($sql);
 		$request_cancel = 'c'; 
 		$stmt->bindValue(1,$request_cancel, PDO::PARAM_STR);
@@ -728,11 +729,21 @@ updatedb_label:
 		if ($got_cancel==='a2' && $got_cancel_reason != CANCEL_REASON2 && $got_cancel_reason != CANCEL_REASON3 ){
 			$alternate = 'true';
                		$limitdate = $alt_limitdate;
+			$sql = "UPDATE tbl_schedule_onetime SET altlimitdate = ? WHERE id = ?";
+			$stmt = $dbh->prepare($sql);
+			$stmt->bindValue(1,$limitdate, PDO::PARAM_STR);
+			$stmt->bindValue(2,$request_id, PDO::PARAM_INT);
+			$stmt->execute();
 		}
 		if ($got_cancel==='a1' && $got_cancel_reason === CANCEL_REASON5 ){
 				// もう一回振替可能
 			$alternate = 'true';
                		$limitdate = $alt_limitdate;
+			$sql = "UPDATE tbl_schedule_onetime SET altlimitdate = ? WHERE id = ?";
+			$stmt = $dbh->prepare($sql);
+			$stmt->bindValue(1,$limitdate, PDO::PARAM_STR);
+			$stmt->bindValue(2,$request_id, PDO::PARAM_INT);
+			$stmt->execute();
 		}
 		break;
 	}
@@ -756,6 +767,7 @@ normal_label:
        	"cancel_reason,".
        	"alternate,".
        	"altsched_id,".
+       	"altlimitdate,".
        	"trial_id,".
        	"repeattimes,".
        	"place_id,".
@@ -765,7 +777,7 @@ normal_label:
        	"additional,".
        	"updatetime,".
        	"updateuser,".
-       	"comment) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )"; 
+       	"comment) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )"; 
 
 	$stmt = $dbh->prepare($sql);
 	$stmt->bindValue(1,$request_id, PDO::PARAM_INT);
@@ -785,16 +797,17 @@ normal_label:
 	$stmt->bindValue(15,$request_cancel_reason, PDO::PARAM_STR);
 	$stmt->bindValue(16,$request_alternate, PDO::PARAM_STR);
 	$stmt->bindValue(17,$request_altsched_id, PDO::PARAM_INT);
-	$stmt->bindValue(18,$request_trial_id, PDO::PARAM_STR);
-	$stmt->bindValue(19,$request_repeattimes, PDO::PARAM_INT);
-	$stmt->bindValue(20,$request_place_id, PDO::PARAM_INT);
-	$stmt->bindValue(21,$request_temporary, PDO::PARAM_INT);
-	$stmt->bindValue(22,$request_recess, PDO::PARAM_STR);
-	$stmt->bindValue(23,$request_confirm, PDO::PARAM_STR);
-	$stmt->bindValue(24,$request_additional, PDO::PARAM_STR);
-	$stmt->bindValue(25,$now, PDO::PARAM_STR);
-	$stmt->bindValue(26,$request_updateuser, PDO::PARAM_INT);
-	$stmt->bindValue(27,$request_comment, PDO::PARAM_STR);
+	$stmt->bindValue(18,$limitdate, PDO::PARAM_STR);
+	$stmt->bindValue(19,$request_trial_id, PDO::PARAM_STR);
+	$stmt->bindValue(20,$request_repeattimes, PDO::PARAM_INT);
+	$stmt->bindValue(21,$request_place_id, PDO::PARAM_INT);
+	$stmt->bindValue(22,$request_temporary, PDO::PARAM_INT);
+	$stmt->bindValue(23,$request_recess, PDO::PARAM_STR);
+	$stmt->bindValue(24,$request_confirm, PDO::PARAM_STR);
+	$stmt->bindValue(25,$request_additional, PDO::PARAM_STR);
+	$stmt->bindValue(26,$now, PDO::PARAM_STR);
+	$stmt->bindValue(27,$request_updateuser, PDO::PARAM_INT);
+	$stmt->bindValue(28,$request_comment, PDO::PARAM_STR);
 	$stmt->execute();
 
 				// 更新イメージの取得
@@ -814,6 +827,7 @@ afterupdate_label:
                "cancel,".
                "cancel_reason,".
                "altsched_id,".
+               "altlimitdate,".
                "trial_id,".
                "place_id,".
                "temporary,".
@@ -827,7 +841,7 @@ afterupdate_label:
 
 	        $stmt = $dbh->query($sql);
                 $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-		$response = array_merge($result[0],array('alternate'=>$alternate,'altlimitdate'=>$limitdate));
+		$response = array_merge($result[0],array('alternate'=>$alternate));
 
 		$res = array(
 			'status'=>'0',

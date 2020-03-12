@@ -5,8 +5,6 @@ require_once("../sakura/schedule/func.inc");
 require_once("./const.inc");
 require_once("./func.inc");
 
-define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
-
 $http_header = getallheaders();
 $token = "";
 //var_dump($http_header);
@@ -273,20 +271,26 @@ try {
 			$altlimitdate = null; // Initialization.
 			$limitdate = null;
 			$got_ymd = $row['ymd'];
-			// $got_ym = mb_substr($got_ymd,0,7); // getting year month data.
-			$nextmonth = '+2 month';
-			$dateObj = new DateTime($got_ymd);
-			$dateObj->add(DateInterval::createFromDateString($nextmonth));
-			$alt_limit_ts = $dateObj->getTimestamp();
-			$alt_limit = getdate($alt_limit_ts);
-			$alt_limitdate = $alt_limit['year'].'-'.$alt_limit['mon'].'-'.$alt_limit['mday'];
-			if ($row['cancel']==='a2' && $row['cancel_reason']!=CANCEL_REASON2 && $row['cancel_reason']!= CANCEL_REASON3) {
+			$got_altlimitdate = $row['altlimitdate'];
+			if (!$got_altlimitdate){	// altlimitdate is not specified.
+				$nextmonth = '+2 month';
+				$dateObj = new DateTime($got_ymd);
+				$dateObj->add(DateInterval::createFromDateString($nextmonth));
+				$alt_limit_ts = $dateObj->getTimestamp();
+				$alt_limit = getdate($alt_limit_ts);
+				$alt_limitdate = $alt_limit['year'].'-'.$alt_limit['mon'].'-'.$alt_limit['mday'];
+				if ($row['cancel']==='a2' && $row['cancel_reason']!=CANCEL_REASON2 && $row['cancel_reason']!= CANCEL_REASON3) {
+					$alternate = 'true';
+					$altlimitdate = $alt_limitdate;
+				}
+				if ($row['cancel']==='a1' && $row['cancel_reason']===CANCEL_REASON5) {
+					$alternate = 'true';
+					$altlimitdate = $alt_limitdate;
+				}
+			} else {
+					// altlimitdate is specified on DB.
 				$alternate = 'true';
-				$altlimitdate = $alt_limitdate;
-			}
-			if ($row['cancel']==='a1' && $row['cancel_reason']===CANCEL_REASON5) {
-				$alternate = 'true';
-				$altlimitdate = $alt_limitdate;
+				$altlimitdate = $got_altlimitdate;
 			}
 			$response = array_merge($row,array('alternate'=>$alternate,'altlimitdate'=>$altlimitdate));
 			$response_array[] = $response;

@@ -5,8 +5,6 @@ require_once("../sakura/schedule/func.inc");
 require_once("./const.inc");
 require_once("./func.inc");
 
-define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
-
 $http_header = getallheaders();
 $token = "";
 if(isset($http_header["Api-Token"])){
@@ -37,6 +35,10 @@ $request_student_no = str_replace('"',"",$request_student_no);
 $request_ymd = $_POST['ymd'];
 $request_ymd = str_replace("'","",$request_ymd);
 $request_ymd = str_replace('"',"",$request_ymd);
+
+var_dump($request_user_id);
+var_dump($POST['ymd']);
+var_dump($request_ymd);
 
 sscanf($request_ymd,'%d-%d-%d',$year,$month,$day);
 
@@ -121,6 +123,10 @@ $request_altsched_id = $_POST['altsched_id'];
 $request_altsched_id = str_replace("'","",$request_altsched_id);
 $request_altsched_id = str_replace('"',"",$request_altsched_id);
 
+$request_altlimitdate = $_POST['altlimitdate'];
+$request_altlimitdate = str_replace("'","",$request_altlimitdate);
+$request_altlimitdate = str_replace('"',"",$request_altlimitdate);
+
 $request_trial_id = $_POST['trial_id'];
 $request_trial_id = str_replace("'","",$request_trial_id);
 $request_trial_id = str_replace('"',"",$request_trial_id);
@@ -159,44 +165,15 @@ $request_comment = $_POST['comment'];
 $request_comment = str_replace("'","",$request_comment);
 $request_comment = str_replace('"',"",$request_comment);
 
+$request_lmsnotify = $_POST['lmsnotify'];
+$request_lmsnotify = str_replace("'","",$request_lmsnotify);
+$request_lmsnotify = str_replace('"',"",$request_lmsnotify);
+
 $now = date('Y-m-d H:i:s');
 
 try {
 
-//	$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime WHERE delflag=0 AND user_id=? AND ymd=? AND ".
-//	$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_onetime_test WHERE delflag=0 AND user_id=? AND ymd=? AND ".
-//        " ((starttime < ? AND endtime > ?) OR ( starttime > ? AND endtime < ? ) OR ".
-//        " ( starttime < ? AND endtime > ? ) OR ( starttime < ? AND endtime > ? ))";
-
-//        $stmt = $dbh->prepare($sql);
-//        $stmt->bindValue(1,$request_user_id, PDO::PARAM_STR);
-//        $stmt->bindValue(2,$request_ymd, PDO::PARAM_STR);
-
-//        $stmt->bindValue(3,$request_starttime, PDO::PARAM_STR);
-//        $stmt->bindValue(4,$request_endtime, PDO::PARAM_STR);
-
-//        $stmt->bindValue(5,$request_starttime, PDO::PARAM_STR);
-//        $stmt->bindValue(6,$request_endtime, PDO::PARAM_STR);
-
-//        $stmt->bindValue(7,$request_starttime, PDO::PARAM_STR);
-//        $stmt->bindValue(8,$request_starttime, PDO::PARAM_STR);
-
-//        $stmt->bindValue(9,$request_endtime, PDO::PARAM_STR);
-//        $stmt->bindValue(10,$request_endtime, PDO::PARAM_STR);
-
-//        $stmt->execute();
-//	  $already_exist = (int)$stmt->fetchColumn();
-//	if ($already_exist > 0 ) {
-			// duplicate.
-//		$res = array(
-//		'status'=>'4',
-//		'data'=>$rslt
-//		);
-//		goto exit_label;
-//	}
-
 	$sql = "INSERT INTO tbl_schedule_onetime (".
-//	$sql = "INSERT INTO tbl_schedule_onetime_test (".
         	"repetition_id,".
         	"user_id,".
         	"teacher_id,".
@@ -213,6 +190,7 @@ try {
         	"cancel_reason,".
         	"alternate,".
         	"altsched_id,".
+        	"altlimitdate,".
         	"trial_id,".
         	"repeattimes,".
         	"place_id,".
@@ -222,7 +200,7 @@ try {
         	"additional,".
         	"entrytime,".
         	"updateuser,".
-        	"comment) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"; 
+        	"comment) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"; 
 
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$request_repetition_id, PDO::PARAM_INT);
@@ -241,22 +219,22 @@ try {
 		$stmt->bindValue(14,$request_cancel_reason, PDO::PARAM_STR);
 		$stmt->bindValue(15,$request_alternate, PDO::PARAM_STR);
 		$stmt->bindValue(16,$request_altsched_id, PDO::PARAM_INT);
-		$stmt->bindValue(17,$request_trial_id, PDO::PARAM_STR);
-		$stmt->bindValue(18,$request_repeattimes, PDO::PARAM_INT);
-		$stmt->bindValue(19,$request_place_id, PDO::PARAM_INT);
-		$stmt->bindValue(20,$request_temporary, PDO::PARAM_INT);
-		$stmt->bindValue(21,$request_recess, PDO::PARAM_STR);
-		$stmt->bindValue(22,$request_confirm, PDO::PARAM_STR);
-		$stmt->bindValue(23,$request_additional, PDO::PARAM_STR);
-		$stmt->bindValue(24,$now, PDO::PARAM_STR);
-		$stmt->bindValue(25,$request_updateuser, PDO::PARAM_INT);
-		$stmt->bindValue(26,$request_comment, PDO::PARAM_STR);
+		$stmt->bindValue(17,$request_altlimitdate, PDO::PARAM_STR);
+		$stmt->bindValue(18,$request_trial_id, PDO::PARAM_STR);
+		$stmt->bindValue(19,$request_repeattimes, PDO::PARAM_INT);
+		$stmt->bindValue(20,$request_place_id, PDO::PARAM_INT);
+		$stmt->bindValue(21,$request_temporary, PDO::PARAM_INT);
+		$stmt->bindValue(22,$request_recess, PDO::PARAM_STR);
+		$stmt->bindValue(23,$request_confirm, PDO::PARAM_STR);
+		$stmt->bindValue(24,$request_additional, PDO::PARAM_STR);
+		$stmt->bindValue(25,$now, PDO::PARAM_STR);
+		$stmt->bindValue(26,$request_updateuser, PDO::PARAM_INT);
+		$stmt->bindValue(27,$request_comment, PDO::PARAM_STR);
 
 		$stmt->execute();
 
 
 	$sql = "SELECT MAX(id) AS maxid FROM tbl_schedule_onetime";
-//	$sql = "SELECT MAX(id) AS maxid FROM tbl_schedule_onetime_test";
 	$stmt = $dbh->query($sql);
 	$rslt = $stmt->fetchAll(PDO::FETCH_ASSOC);
 	foreach ($rslt as $row) {
@@ -281,6 +259,7 @@ try {
         	"cancel_reason,".
         	"alternate,".
         	"altsched_id,".
+        	"altlimitdate,".
         	"trial_id,".
         	"repeattimes,".
         	"place_id,".
@@ -290,7 +269,7 @@ try {
         	"additional,".
         	"entrytime,".
         	"updateuser,".
-        	"comment) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )"; 
+        	"comment) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )"; 
 
 		$stmt = $dbh->prepare($sql);
 		$stmt->bindValue(1,$id, PDO::PARAM_INT);
@@ -310,16 +289,17 @@ try {
 		$stmt->bindValue(15,$request_cancel_reason, PDO::PARAM_STR);
 		$stmt->bindValue(16,$request_alternate, PDO::PARAM_STR);
 		$stmt->bindValue(17,$request_altsched_id, PDO::PARAM_INT);
-		$stmt->bindValue(18,$request_trial_id, PDO::PARAM_STR);
-		$stmt->bindValue(19,$request_repeattimes, PDO::PARAM_INT);
-		$stmt->bindValue(20,$request_place_id, PDO::PARAM_INT);
-		$stmt->bindValue(21,$request_temporary, PDO::PARAM_INT);
-		$stmt->bindValue(22,$request_recess, PDO::PARAM_STR);
-		$stmt->bindValue(23,$request_confirm, PDO::PARAM_STR);
-		$stmt->bindValue(24,$request_additional, PDO::PARAM_STR);
-		$stmt->bindValue(25,$now, PDO::PARAM_STR);
-		$stmt->bindValue(26,$request_updateuser, PDO::PARAM_INT);
-		$stmt->bindValue(27,$request_comment, PDO::PARAM_STR);
+		$stmt->bindValue(18,$request_altlimitdate, PDO::PARAM_INT);
+		$stmt->bindValue(19,$request_trial_id, PDO::PARAM_STR);
+		$stmt->bindValue(20,$request_repeattimes, PDO::PARAM_INT);
+		$stmt->bindValue(21,$request_place_id, PDO::PARAM_INT);
+		$stmt->bindValue(22,$request_temporary, PDO::PARAM_INT);
+		$stmt->bindValue(23,$request_recess, PDO::PARAM_STR);
+		$stmt->bindValue(24,$request_confirm, PDO::PARAM_STR);
+		$stmt->bindValue(25,$request_additional, PDO::PARAM_STR);
+		$stmt->bindValue(26,$now, PDO::PARAM_STR);
+		$stmt->bindValue(27,$request_updateuser, PDO::PARAM_INT);
+		$stmt->bindValue(28,$request_comment, PDO::PARAM_STR);
 
 		$stmt->execute();
 		
@@ -327,6 +307,25 @@ try {
 			'status'=>'0',
 			'id'=>$maxid
 			);
+		if ($request_lmsnotify){
+				// function call.
+			$result = set_lmsnotify($maxid);
+			if ($result != 0){
+				$res = array(
+				'status'=>$result
+				);
+			} else {
+				$res = array(
+				'status'=>'0',
+				'id'=>$maxid
+				);
+			} 
+		} else {
+			$res = array(
+			'status'=>'0',
+			'id'=>$maxid
+			);
+		}
 exit_label:
 		// exit the program.
 
@@ -337,6 +336,35 @@ exit_label:
 		'status'=>'error',
 		);
 
+}
+
+function set_lmsnotify($maxid){
+		// this function notify update of the schedule to lms.
+	$result = NULL;		// initialization.
+	$senddata = array(
+		'id' => $maxid
+	);
+	$query = http_build_query($senddata);
+	$header = array(
+		'Content-Type: application/x-www-form-urlencoded',
+		'Content-Length: '.strlen($query)
+	);
+	$option = array('http' => array(
+		'method' => 'POST',
+		'header' => implode("\r\n",$header),
+		'content' => $query
+		)
+	);
+	$ctx = stream_context_create($option);
+	$platform = PLATFORM;
+        if ($platform === 'staging' ){
+                $url = 'https://staging.sakuraone.jp/import/schedules';
+        } else if ($platform === 'production' ){
+                $url = 'https://sakuraone.jp/import/schedules';
+	} 
+        $result = file_get_contents($url,false,$ctx);
+//var_dump($result);
+	return($result);
 }
 
 header("Content-Type: application/json; charset=utf-8");
