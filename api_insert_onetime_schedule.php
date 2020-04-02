@@ -36,10 +36,6 @@ $request_ymd = $_POST['ymd'];
 $request_ymd = str_replace("'","",$request_ymd);
 $request_ymd = str_replace('"',"",$request_ymd);
 
-var_dump($request_user_id);
-var_dump($POST['ymd']);
-var_dump($request_ymd);
-
 sscanf($request_ymd,'%d-%d-%d',$year,$month,$day);
 
 if (!checkdate($month, $day, $year)){
@@ -123,9 +119,15 @@ $request_altsched_id = $_POST['altsched_id'];
 $request_altsched_id = str_replace("'","",$request_altsched_id);
 $request_altsched_id = str_replace('"',"",$request_altsched_id);
 
-$request_altlimitdate = $_POST['altlimitdate'];
-$request_altlimitdate = str_replace("'","",$request_altlimitdate);
-$request_altlimitdate = str_replace('"',"",$request_altlimitdate);
+if ($_POST['altlimitdate']){
+				// altlimitdate is specified.
+	$request_altlimitdate = $_POST['altlimitdate'];
+	$request_altlimitdate = str_replace("'","",$request_altlimitdate);
+	$request_altlimitdate = str_replace('"',"",$request_altlimitdate);
+} else {
+				// altlimitdate is not specified.
+	$request_altlimitdate = NULL;
+}
 
 $request_trial_id = $_POST['trial_id'];
 $request_trial_id = str_replace("'","",$request_trial_id);
@@ -303,21 +305,19 @@ try {
 
 		$stmt->execute();
 		
-		$res = array(
-			'status'=>'0',
-			'id'=>$maxid
-			);
 		if ($request_lmsnotify){
-				// function call.
+						// function call.
 			$result = set_lmsnotify($maxid);
-			if ($result != 0){
+			if ($result === FALSE){
 				$res = array(
-				'status'=>$result
+				'status'=>'lmsimport failed',
+				'id'=>$maxid
 				);
-			} else {
+			} else { 
 				$res = array(
 				'status'=>'0',
-				'id'=>$maxid
+				'id'=>$maxid,
+				'importstatus'=>$result
 				);
 			} 
 		} else {
@@ -345,25 +345,35 @@ function set_lmsnotify($maxid){
 		'id' => $maxid
 	);
 	$query = http_build_query($senddata);
-	$header = array(
-		'Content-Type: application/x-www-form-urlencoded',
-		'Content-Length: '.strlen($query)
-	);
-	$option = array('http' => array(
-		'method' => 'POST',
-		'header' => implode("\r\n",$header),
-		'content' => $query
-		)
-	);
-	$ctx = stream_context_create($option);
 	$platform = PLATFORM;
         if ($platform === 'staging' ){
-                $url = 'https://staging.sakuraone.jp/import/schedules';
+        	$result = file_get_contents('https://staging.sakuraone.jp/import/schedules?'.$query);
         } else if ($platform === 'production' ){
-                $url = 'https://sakuraone.jp/import/schedules';
+        	$result = file_get_contents('https://sakuraone.jp/import/schedules?'.$query);
 	} 
-        $result = file_get_contents($url,false,$ctx);
-//var_dump($result);
+	if ($result === FALSE ){
+		return($result);
+	}
+
+				// http-post:
+        if ($platform === 'staging' ){
+        	$url = 'https://staging.sakuraone.jp/import/schedules?'.$query;
+        } else if ($platform === 'production' ){
+        	$url = 'https://sakuraone.jp/import/schedules?'.$query;
+	} 
+	$header = array(
+		'Content-Type: application/x-www-form-urlencoded',
+		'Content-Length: '.strlen($url),
+		'Api-Token: 7511a32c7b6fd3d085f7c6cbe66049e7'  
+	);
+	$options = array('http' => array(
+		'method' => 'POST',
+		'header' => implode("\r\n",$header)
+		)
+	);
+	$ctx = stream_context_create($options);
+       	$result = file_get_contents($url,false,$ctx);
+	if(!empty($result)) $result = json_decode($result);
 	return($result);
 }
 
