@@ -85,6 +85,10 @@ $request_work_id = $_GET['work_id'];
 $request_work_id = str_replace("'","",$request_work_id);
 $request_work_id = str_replace('"',"",$request_work_id);
 
+$request_is_delete_data = $_GET['is_delete_data'];
+$request_is_delete_data = str_replace("'","",$request_is_delete_data);
+$request_is_delete_data = str_replace('"',"",$request_is_delete_data);
+
 $defaultstartdate = "2019-01-01";
 
 try {
@@ -114,8 +118,14 @@ try {
 		"updateuser,".
 		"comment,".
 		"delflag".
-		" FROM tbl_schedule_onetime WHERE delflag!=1".
-		" AND user_id != 200000 AND user_id != 100000 AND teacher_id != 100000";
+		" FROM tbl_schedule_onetime WHERE ".
+		" user_id != 200000 AND user_id != 100000 AND teacher_id != 100000";
+
+		if ($request_is_delete_data) {
+			$sql .= " AND delflag=1";
+		} else {
+			$sql .= " AND delflag!=1";
+		}
 
 		if (!$request_startdate) {
 			$request_startdate=$defaultstartdate;
