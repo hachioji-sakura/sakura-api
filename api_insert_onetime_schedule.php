@@ -214,7 +214,7 @@ try {
 		$stmt->bindValue(7,$request_endtime, PDO::PARAM_STR);
 		$stmt->bindValue(8,$request_lecture_id, PDO::PARAM_INT);
 		$stmt->bindValue(9,$request_group_lesson_id, PDO::PARAM_INT);
-		$stmt->bindValue(10,$request_subject_expr, PDO::PARAM_INT);
+		$stmt->bindValue(10,$request_subject_expr, PDO::PARAM_STR);
 		$stmt->bindValue(11,$request_work_id, PDO::PARAM_INT);
 		$stmt->bindValue(12,$request_free, PDO::PARAM_STR);
 		$stmt->bindValue(13,$request_cancel, PDO::PARAM_STR);
@@ -284,7 +284,7 @@ try {
 		$stmt->bindValue(8,$request_endtime, PDO::PARAM_STR);
 		$stmt->bindValue(9,$request_lecture_id, PDO::PARAM_INT);
 		$stmt->bindValue(10,$request_group_lesson_id, PDO::PARAM_INT);
-		$stmt->bindValue(11,$request_subject_expr, PDO::PARAM_INT);
+		$stmt->bindValue(11,$request_subject_expr, PDO::PARAM_STR);
 		$stmt->bindValue(12,$request_work_id, PDO::PARAM_INT);
 		$stmt->bindValue(13,$request_free, PDO::PARAM_STR);
 		$stmt->bindValue(14,$request_cancel, PDO::PARAM_STR);
