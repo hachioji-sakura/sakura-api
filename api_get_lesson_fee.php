@@ -3,8 +3,6 @@ ini_set( 'display_errors', 0 );
 require_once("../sakura/schedule/const/const.inc");
 require_once("../sakura/schedule/func.inc");
 
-define(API_TOKEN, '7511a32c7b6fd3d085f7c6cbe66049e7');
-
 $http_header = getallheaders();
 $token = "";
 if(isset($http_header["Api-Token"])){
@@ -23,6 +21,7 @@ function get_param($str) {
 }
 
 $lesson_id			= get_param('lesson');
+$subject_id			= get_param('subject');
 $lesson_grade		= get_param('grade');
 $lesson_count		= get_param('lesson_week_count');
 $lesson_length	= get_param('course_minutes');
@@ -32,11 +31,12 @@ $jyukensei_flag	= get_param('jyukensei_flag');
 try {
 
 	$sql = "SELECT lesson_fee FROM tbl_lesson_fee ".
-			"WHERE lesson_id=? AND course_id=? AND lesson_grade<=? AND lesson_count=? AND lesson_length=? AND end_month='' ".
+			"WHERE lesson_id=? AND (subject_id IS NULL OR subject_id=?) AND course_id=? AND lesson_grade<=? ".
+			"AND (lesson_count=0 OR lesson_count=?) AND (lesson_length=0 OR lesson_length=?) AND end_month='' ".
 			"AND jyukensei_flag=? AND (?=0 OR ? IN(5,6,7)) ".
 			"ORDER BY lesson_grade DESC";
 	$stmt = $db->prepare($sql);
-	$stmt->execute(array($lesson_id, $course_id, $lesson_grade, $lesson_count, $lesson_length, $jyukensei_flag, $jyukensei_flag, $lesson_grade));
+	$stmt->execute(array($lesson_id, $subject_id, $course_id, $lesson_grade, $lesson_count, $lesson_length, $jyukensei_flag, $jyukensei_flag, $lesson_grade));
 	$rslt = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 	if ($rslt[0]) {
