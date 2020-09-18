@@ -456,7 +456,7 @@ try {
 		$stmt->execute();
 		$absent_threshold_monthly = (int)$stmt->fetchColumn();
 
-		if ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY){
+		if ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY || $got_lesson_id == 3/* PIANO */){
 			$cancel_kind = 'a1';	// 休み１
 		} else {
 			$cancel_kind = 'a2';	// 休み２
@@ -520,7 +520,7 @@ try {
 			}
 		} else if ($absent_cnt < $absent_threshold && $limitdate_timestamp > $current_timestamp ) {
 					// 許容範囲の休みで事前連絡の場合
-			if ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY ){
+			if ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY || $got_lesson_id == 3/* PIANO */ ){
 				$absent_id = 'a1';
 			} else {
 				if ($holiday_is_a1 == true || $rest_is_a1 == true || $first_rest_is_a1 == true ){
@@ -577,7 +577,7 @@ updatedb_label:
 							// request for cancelation of the rest.
 		if (($got_cancel ==='a2' && $got_cancel_reason === '') ||
 		($got_cancel ==='a1' && $got_cancel_reason === '' && $first_rest_is_a1 == true ) ||
-		( ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY) && $got_cancel==='a1' && $got_cancel_reason==='')) {
+		( ($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY || $got_lesson_id == 3/* PIANO */) && $got_cancel==='a1' && $got_cancel_reason==='')) {
 			// 当該月に休み２規定回数以上が既に入力されていないかを調べる
 		$cancel_kind = 'a2';
 		$sql = "SELECT id FROM tbl_schedule_onetime WHERE delflag = 0 AND ymd BETWEEN ? AND ? AND cancel = ?"  
