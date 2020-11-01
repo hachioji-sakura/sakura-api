@@ -27,6 +27,10 @@ define('COURSE_FAMILY',3);
 
 define('PLACE_AROLE',6);
 
+$logfile = '../sakura/schedule/log/api_update_onetime_schedule.log';
+file_put_contents($logfile, date("----------- Y/m/d H:i:s \n"), FILE_APPEND);
+ob_start();var_dump($_POST);echo"\n";$log = ob_get_contents(); ob_end_clean();
+file_put_contents($logfile, $log, FILE_APPEND);
 //var_dump($_POST['type']);
 $request_id = $_POST['id'];
 $request_id = str_replace("'","",$request_id);
@@ -433,6 +437,7 @@ try {
 			break;
 		}
 										// check how many lessons in a week .
+/*
 		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat A,tbl_lecture B WHERE A.delflag=0 ";
 		$sql .= " AND A.user_id=? AND A.work_id=? AND A.kind='w' AND (A.enddate IS NULL OR A.enddate > ?)";
 		$sql .= " AND A.lecture_id=B.lecture_id AND B.lesson_id=? ";
@@ -443,6 +448,8 @@ try {
 		$stmt->bindValue(4,$got_lesson_id, PDO::PARAM_INT);
 		$stmt->execute();
 		$absent_threshold_weekly = (int)$stmt->fetchColumn();
+*/
+		$absent_threshold_weekly = get_lesson_count($db, str_pad($got_student_no,6,'0',STR_PAD_LEFT), $got_y, $got_m, $got_lesson_id, $got_course_id);
 
 										// check how many lessons in a month .
 		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat A,tbl_lecture B WHERE A.delflag=0 ";
@@ -503,6 +510,8 @@ try {
 			$absent_cnt = (int)$stmt->fetchColumn();
 			$absent_threshold = $absent_threshold_monthly / 2;	// 月２回のとき２カ月に１回がリミット
 		}
+ob_start();echo "$absent_cnt,$absent_threshold.\n";$log = ob_get_contents(); ob_end_clean();
+file_put_contents($logfile, $log, FILE_APPEND);
 		$request_cancel_reason = '' ; 		// Initialization.
 		if ($got_trial_id !== 0) {
 					// 体験の休み
@@ -904,6 +913,8 @@ header("Content-Type: application/json; charset=utf-8");
 
 //var_dump($token);
 
-echo json_encode($res);
+$log = json_encode($res);
+echo $log;
+file_put_contents($logfile, "$log\n", FILE_APPEND);
 
 ?>
