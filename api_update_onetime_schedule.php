@@ -873,9 +873,14 @@ $rest_is_a1 = false;
 $first_rest_is_a1 = false;
 $rest_add_exchange_enable = false;
 try {
-	$sql = "SELECT tag_value from user_tags WHERE user_id=? AND tag_key='student_type'";
+	$sql = "SELECT user_id from user_tags WHERE tag_key='student_no' AND tag_value=?";
 	$stmt = $dbc->prepare($sql);
 	$stmt->bindValue(1,$got_user_id, PDO::PARAM_INT);
+	$stmt->execute();
+	$lms_user_id = $stmt->fetch(PDO::FETCH_COLUMN);
+	$sql = "SELECT tag_value from user_tags WHERE user_id=? AND tag_key='student_type'";
+	$stmt = $dbc->prepare($sql);
+	$stmt->bindValue(1,$lms_user_id, PDO::PARAM_INT);
 	$stmt->execute();
 	$student_type_array = $stmt->fetchAll(PDO::FETCH_ASSOC);
 	foreach ($student_type_array as $student_type) {
