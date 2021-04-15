@@ -28,6 +28,7 @@ define('COURSE_FAMILY',3);
 define('PLACE_AROLE',6);
 
 $logfile = '../sakura/schedule/log/api_update_onetime_schedule.log';
+$errfile = '../sakura/schedule/log/api_update_onetime_schedule.err';
 file_put_contents($logfile, date("----------- Y/m/d H:i:s \n"), FILE_APPEND);
 ob_start();var_dump($_POST);echo"\n";$log = ob_get_contents(); ob_end_clean();
 file_put_contents($logfile, $log, FILE_APPEND);
@@ -359,6 +360,7 @@ try {
 	$rest_add_exchange_enable = $restcare_inf[3];	// true if the student is specified as add exchange enable.
 
 	if ($request_type==='rest' ){
+		
 						// 休み連絡
 		if ($got_user_id > 100000 ) { // teacher or staff. No need to check absent category.
 			$absent_id = 'a';
@@ -378,6 +380,13 @@ try {
 			$absent_id = 'a2';
 			$request_cancel_reason = CANCEL_SELFREASON ;
 			goto updatedb_label;
+		}
+		
+		// グループ授業で既に休み登録されている場合
+		if (($got_course_id == COURSE_GROUP || $got_course_id == COURSE_FAMILY) && $got_cancel) {
+			$request_cancel = $got_cancel;
+			$request_cancel_reason = $got_cancel_reason;
+			goto normal_label;
 		}
 
 		$currentObj = new DateTime();
@@ -437,7 +446,7 @@ try {
 			break;
 		}
 										// check how many lessons in a week .
-/*
+
 		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat A,tbl_lecture B WHERE A.delflag=0 ";
 		$sql .= " AND A.user_id=? AND A.work_id=? AND A.kind='w' AND (A.enddate IS NULL OR A.enddate > ?)";
 		$sql .= " AND A.lecture_id=B.lecture_id AND B.lesson_id=? ";
@@ -447,9 +456,12 @@ try {
 		$stmt->bindValue(3,$got_ymd, PDO::PARAM_STR);
 		$stmt->bindValue(4,$got_lesson_id, PDO::PARAM_INT);
 		$stmt->execute();
-		$absent_threshold_weekly = (int)$stmt->fetchColumn();
-*/
+		$absent_threshold_weekly1 = (int)$stmt->fetchColumn();
+
 		$absent_threshold_weekly = get_lesson_count($db, str_pad($got_student_no,6,'0',STR_PAD_LEFT), $got_y, $got_m, $got_lesson_id, $got_course_id);
+		if (!$absent_threshold_weekly || $absent_threshold_weekly!=$absent_threshold_weekly1) {
+			file_put_contents($errfile, date("Y/m/d H:i:s ")."$absent_threshold_weekly,$absent_threshold_weekly1\n", FILE_APPEND);
+		}
 
 										// check how many lessons in a month .
 		$sql = "SELECT COUNT(*) AS COUNT FROM tbl_schedule_repeat A,tbl_lecture B WHERE A.delflag=0 ";
